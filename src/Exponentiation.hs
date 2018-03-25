@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Exponentiation where
 
 -- modular exponentiation
@@ -21,18 +22,35 @@ modExp b e m res
   | e `mod` 2 == 1 = modExp ((b * b) `mod` m) (e `div` 2) m (res * b `mod` m)
   | otherwise = modExp ((b * b) `mod` m) (e `div` 2) m res
 
-
 fermatPT :: Integer -> Bool
 fermatPT n = all (fermatTest n) (filter (\a -> gcd n a == 1) [1..n-1])
              where fermatTest n a = modExp a (n-1) n 1 == 1
 
-{--
-main :: IO ()
-main =
-  print $
-  modExp
-    2988348162058574136915891421498819466320163312926952423791023078876139
-    2351399303373464486466122544523690094744975233415544072992656881240319
-    (10 ^ 40)
-    1
--}
+findds :: Integer -> (Integer, Integer)
+findds n = f 0 n
+  where
+    f d m
+      | r == 1 = (d, m)
+      | otherwise = f (d+1) s
+       where (s, r) = quotRem m 2
+
+squareMod :: Integer -> Integer -> Integer
+squareMod n a = (a * a) `rem` n
+
+millerRabinPrimalityTest :: Integer -> Integer -> Bool
+millerRabinPrimalityTest n a
+  | a <= 1 || a >= n - 1 = error $ "witness a out of range "
+  | n < 2 = False
+  | even n = False
+  | b0 == 1 || b0 == n' = True
+  | otherwise = iter (tail b)
+  where
+    n' = n - 1
+    (d, s) = findds n'
+    b0 = modExp a s n 1 -- a^s mod n 
+    b = take (fromIntegral d) $ iterate (squareMod n) b0
+    iter [] = False
+    iter (x:xs)
+      | x == 1 = False
+      | x == n' = True
+      | otherwise = iter xs
